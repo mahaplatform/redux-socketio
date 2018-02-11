@@ -4,10 +4,10 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 
 module.exports = (env) => ({
   entry: {
-    main: './src/index.js'
+    main: './src/client/index.js'
   },
   output: {
-    path: path.resolve(__dirname, 'dist'),
+    path: path.resolve(__dirname, 'public'),
     filename: './js/[name].[chunkhash].js'
   },
   plugins: [
@@ -18,9 +18,9 @@ module.exports = (env) => ({
       }
     }),
     new HtmlWebpackPlugin({
-      filename: path.resolve(__dirname, 'dist', 'index.html'),
-      template: path.resolve(__dirname, 'src', 'index.html'),
-      title: 'Redux API Request'
+      filename: path.resolve(__dirname, 'public', 'index.html'),
+      template: path.resolve(__dirname, 'src', 'client', 'index.html'),
+      title: 'Redux SocketIO Client'
     })
   ],
   module: {
