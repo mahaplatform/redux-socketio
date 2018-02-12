@@ -32,22 +32,9 @@ exports.default = function () {
 
   switch (action.type) {
 
-    case 'JOIN_REQUEST':
-    case 'LEAVE_REQUEST':
-    case 'MESSAGE_REQUEST':
+    case 'MESSAGE':
       return _extends({}, state, {
-        log: [].concat(_toConsumableArray(state.log), [_extends({
-          type: 'REQUEST'
-        }, action.request)])
-      });
-
-    case 'JOIN_SUCCESS':
-    case 'LEAVE_SUCCESS':
-    case 'MESSAGE_SUCCESS':
-      return _extends({}, state, {
-        log: [].concat(_toConsumableArray(state.log), [_extends({
-          type: 'RESULT'
-        }, action.result)])
+        log: [].concat(_toConsumableArray(state.log), [action.message])
       });
 
     default:
@@ -69,11 +56,11 @@ Object.defineProperty(exports, "__esModule", {
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _react = __webpack_require__(4);
+var _react = __webpack_require__(3);
 
 var _react2 = _interopRequireDefault(_react);
 
-var _propTypes = __webpack_require__(11);
+var _propTypes = __webpack_require__(9);
 
 var _propTypes2 = _interopRequireDefault(_propTypes);
 
@@ -81,7 +68,160 @@ var _actions = __webpack_require__(117);
 
 var actions = _interopRequireWildcard(_actions);
 
-var _reactRedux = __webpack_require__(32);
+var _reactRedux = __webpack_require__(17);
+
+function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var Network = function (_React$Component) {
+  _inherits(Network, _React$Component);
+
+  function Network() {
+    _classCallCheck(this, Network);
+
+    return _possibleConstructorReturn(this, (Network.__proto__ || Object.getPrototypeOf(Network)).apply(this, arguments));
+  }
+
+  _createClass(Network, [{
+    key: 'render',
+    value: function render() {
+      return this.props.children;
+    }
+  }, {
+    key: 'getChildContext',
+    value: function getChildContext() {
+      return {
+        network: {
+          subscribe: this._handleSubscribe.bind(this),
+          unsubscribe: this._handleUnsubscribe.bind(this),
+          message: this._handleMessage.bind(this)
+        }
+      };
+    }
+  }, {
+    key: '_handleSubscribe',
+    value: function _handleSubscribe(channel, action, handler) {
+      this.props.onSubscribe(channel, action, handler);
+    }
+  }, {
+    key: '_handleUnsubscribe',
+    value: function _handleUnsubscribe(channel, action, handler) {
+      this.props.onUnsubscribe(channel, action, handler);
+    }
+  }, {
+    key: '_handleMessage',
+    value: function _handleMessage(channel, action, message) {
+      this.props.onMessage(channel, action, message);
+    }
+  }]);
+
+  return Network;
+}(_react2.default.Component);
+
+Network.childContextTypes = {
+  network: _propTypes2.default.object
+};
+Network.propTypes = {
+  log: _propTypes2.default.array,
+  onJoin: _propTypes2.default.func,
+  onLeave: _propTypes2.default.func,
+  onAction: _propTypes2.default.func
+};
+
+
+var mapStateToProps = function mapStateToProps(state) {
+  return {};
+};
+
+var mapDispatchToProps = {
+  onSubscribe: actions.subscribe,
+  onUnsubscribe: actions.unsubscribe,
+  onMessage: actions.message
+};
+
+exports.default = (0, _reactRedux.connect)(mapStateToProps, mapDispatchToProps)(Network);
+
+/***/ }),
+
+/***/ 117:
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+var subscribe = exports.subscribe = function subscribe(channel, action, handler) {
+  return {
+    type: 'SOCKETIO_SUBSCRIBE',
+    channel: channel,
+    action: action,
+    handler: handler,
+    request: 'SUBSCRIBE_REQUEST',
+    success: 'SUBSCRIBE_SUCCESS',
+    failure: 'SUBSCRIBE_FAILURE'
+  };
+};
+
+var unsubscribe = exports.unsubscribe = function unsubscribe(channel, action, handler) {
+  return {
+    type: 'SOCKETIO_UNSUBSCRIBE',
+    channel: channel,
+    action: action,
+    handler: handler,
+    request: 'UNSUBSCRIBE_REQUEST',
+    success: 'UNSUBSCRIBE_SUCCESS',
+    failure: 'UNSUBSCRIBE_FAILURE'
+  };
+};
+
+var message = exports.message = function message(channel, action, _message) {
+  return {
+    type: 'SOCKETIO_MESSAGE',
+    channel: channel,
+    action: action,
+    message: _message,
+    request: 'MESSAGE_REQUEST',
+    success: 'MESSAGE_SUCCESS',
+    failure: 'MESSAGE_FAILURE'
+  };
+};
+
+/***/ }),
+
+/***/ 118:
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _react = __webpack_require__(3);
+
+var _react2 = _interopRequireDefault(_react);
+
+var _propTypes = __webpack_require__(9);
+
+var _propTypes2 = _interopRequireDefault(_propTypes);
+
+var _actions = __webpack_require__(119);
+
+var actions = _interopRequireWildcard(_actions);
+
+var _reactRedux = __webpack_require__(17);
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
@@ -97,9 +237,17 @@ var Canvas = function (_React$Component) {
   _inherits(Canvas, _React$Component);
 
   function Canvas() {
+    var _ref;
+
+    var _temp, _this, _ret;
+
     _classCallCheck(this, Canvas);
 
-    return _possibleConstructorReturn(this, (Canvas.__proto__ || Object.getPrototypeOf(Canvas)).apply(this, arguments));
+    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    return _ret = (_temp = (_this = _possibleConstructorReturn(this, (_ref = Canvas.__proto__ || Object.getPrototypeOf(Canvas)).call.apply(_ref, [this].concat(args))), _this), _this._handleReceiveMessage = _this._handleReceiveMessage.bind(_this), _temp), _possibleConstructorReturn(_this, _ret);
   }
 
   _createClass(Canvas, [{
@@ -120,70 +268,7 @@ var Canvas = function (_React$Component) {
             { className: 'col-md-12 text-center' },
             _react2.default.createElement(
               'form',
-              { className: 'form-inline', onSubmit: this._handleJoin.bind(this) },
-              _react2.default.createElement(
-                'div',
-                { className: 'input-group mb-2 mr-sm-2 mb-sm-0 mb-2 mr-sm-2 mb-sm-0' },
-                _react2.default.createElement('input', { type: 'text', className: 'form-control', placeholder: 'Channel', ref: function ref(node) {
-                    return _this2.joinChannel = node;
-                  } })
-              ),
-              _react2.default.createElement(
-                'div',
-                { className: 'input-group mb-2 mr-sm-2 mb-sm-0 mb-2 mr-sm-2 mb-sm-0' },
-                _react2.default.createElement(
-                  'button',
-                  { className: 'btn btn-block btn-primary' },
-                  'Join'
-                )
-              )
-            )
-          )
-        ),
-        _react2.default.createElement(
-          'div',
-          { className: 'container' },
-          _react2.default.createElement(
-            'div',
-            { className: 'col-md-12 text-center' },
-            _react2.default.createElement(
-              'form',
-              { className: 'form-inline', onSubmit: this._handleLeave.bind(this) },
-              _react2.default.createElement(
-                'div',
-                { className: 'input-group mb-2 mr-sm-2 mb-sm-0 mb-2 mr-sm-2 mb-sm-0' },
-                _react2.default.createElement('input', { type: 'text', className: 'form-control', placeholder: 'Channel', ref: function ref(node) {
-                    return _this2.leaveChannel = node;
-                  } })
-              ),
-              _react2.default.createElement(
-                'div',
-                { className: 'input-group mb-2 mr-sm-2 mb-sm-0 mb-2 mr-sm-2 mb-sm-0' },
-                _react2.default.createElement(
-                  'button',
-                  { className: 'btn btn-block btn-primary' },
-                  'Leave'
-                )
-              )
-            )
-          )
-        ),
-        _react2.default.createElement(
-          'div',
-          { className: 'container' },
-          _react2.default.createElement(
-            'div',
-            { className: 'col-md-12 text-center' },
-            _react2.default.createElement(
-              'form',
               { className: 'form-inline', onSubmit: this._handleMessage.bind(this) },
-              _react2.default.createElement(
-                'div',
-                { className: 'input-group mb-2 mr-sm-2 mb-sm-0 mb-2 mr-sm-2 mb-sm-0' },
-                _react2.default.createElement('input', { type: 'text', className: 'form-control', placeholder: 'Channel', ref: function ref(node) {
-                    return _this2.messageChannel = node;
-                  } })
-              ),
               _react2.default.createElement(
                 'div',
                 { className: 'input-group mb-2 mr-sm-2 mb-sm-0 mb-2 mr-sm-2 mb-sm-0' },
@@ -201,104 +286,51 @@ var Canvas = function (_React$Component) {
                 )
               )
             ),
-            _react2.default.createElement(
-              'table',
-              { className: 'table table-bordered table-striped' },
-              _react2.default.createElement(
-                'thead',
-                null,
-                _react2.default.createElement(
-                  'tr',
-                  null,
-                  _react2.default.createElement(
-                    'th',
-                    null,
-                    'TYPE'
-                  ),
-                  _react2.default.createElement(
-                    'th',
-                    null,
-                    'CHANNEL'
-                  ),
-                  _react2.default.createElement(
-                    'th',
-                    null,
-                    'RESULT'
-                  ),
-                  _react2.default.createElement(
-                    'th',
-                    null,
-                    'DATA'
-                  )
-                )
-              ),
-              _react2.default.createElement(
-                'tbody',
-                null,
-                log.map(function (row, index) {
-                  return _react2.default.createElement(
-                    'tr',
-                    { key: 'row_' + index },
-                    _react2.default.createElement(
-                      'td',
-                      null,
-                      row.type
-                    ),
-                    _react2.default.createElement(
-                      'td',
-                      null,
-                      row.channel
-                    ),
-                    _react2.default.createElement(
-                      'td',
-                      null,
-                      JSON.stringify(row.meta)
-                    ),
-                    _react2.default.createElement(
-                      'td',
-                      null,
-                      JSON.stringify(row.data)
-                    )
-                  );
-                })
-              )
-            )
+            log.map(function (row, index) {
+              return _react2.default.createElement(
+                'div',
+                { key: 'row_' + index },
+                row.text
+              );
+            })
           )
         )
       );
     }
   }, {
-    key: '_handleJoin',
-    value: function _handleJoin(e) {
-      e.preventDefault();
-      this.props.onJoin(this.joinChannel.value);
+    key: 'componentDidMount',
+    value: function componentDidMount() {
+      this.context.network.subscribe('chat', 'message', this._handleReceiveMessage);
     }
   }, {
-    key: '_handleLeave',
-    value: function _handleLeave(e) {
-      e.preventDefault();
-      this.props.onLeave(this.leaveChannel.value);
+    key: 'componentWillUnmount',
+    value: function componentWillUnmount(e) {
+      this.context.network.unsubscribe('chat', 'message', this._handleReceiveMessage);
+    }
+  }, {
+    key: '_handleReceiveMessage',
+    value: function _handleReceiveMessage(message) {
+      this.props.onMessage(message);
     }
   }, {
     key: '_handleMessage',
     value: function _handleMessage(e) {
       e.preventDefault();
-      var data = {
-        action: 'message',
+      var message = {
         text: this.messageText.value
       };
-      this.props.onMessage(this.messageChannel.value, data);
+      this.context.network.message('chat', 'message', message);
     }
   }]);
 
   return Canvas;
 }(_react2.default.Component);
 
+Canvas.contextTypes = {
+  network: _propTypes2.default.object
+};
 Canvas.propTypes = {
-  log: _propTypes2.default.array,
-  onJoin: _propTypes2.default.func,
-  onLeave: _propTypes2.default.func,
-  onAction: _propTypes2.default.func
+  log: _propTypes2.default.array
 };
 
 
@@ -309,17 +341,14 @@ var mapStateToProps = function mapStateToProps(state) {
 };
 
 var mapDispatchToProps = {
-  onJoin: actions.join,
-  onLeave: actions.leave,
-  onMessage: actions.message,
-  onAction: actions.action
+  onMessage: actions.message
 };
 
 exports.default = (0, _reactRedux.connect)(mapStateToProps, mapDispatchToProps)(Canvas);
 
 /***/ }),
 
-/***/ 117:
+/***/ 119:
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -328,34 +357,10 @@ exports.default = (0, _reactRedux.connect)(mapStateToProps, mapDispatchToProps)(
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-var join = exports.join = function join(channel) {
+var message = exports.message = function message(_message) {
   return {
-    type: 'SOCKET_JOIN',
-    channel: channel,
-    request: 'JOIN_REQUEST',
-    success: 'JOIN_SUCCESS',
-    failure: 'JOIN_FAILURE'
-  };
-};
-
-var leave = exports.leave = function leave(channel) {
-  return {
-    type: 'SOCKET_LEAVE',
-    channel: channel,
-    request: 'LEAVE_REQUEST',
-    success: 'LEAVE_SUCCESS',
-    failure: 'LEAVE_FAILURE'
-  };
-};
-
-var message = exports.message = function message(channel, data) {
-  return {
-    type: 'SOCKET_MESSAGE',
-    channel: channel,
-    data: data,
-    request: 'MESSAGE_REQUEST',
-    success: 'MESSAGE_SUCCESS',
-    failure: 'MESSAGE_FAILURE'
+    type: 'MESSAGE',
+    message: _message
   };
 };
 
@@ -367,7 +372,7 @@ var message = exports.message = function message(channel, data) {
 "use strict";
 
 
-var _react = __webpack_require__(4);
+var _react = __webpack_require__(3);
 
 var _react2 = _interopRequireDefault(_react);
 
@@ -379,7 +384,11 @@ var _root = __webpack_require__(61);
 
 var _root2 = _interopRequireDefault(_root);
 
-var _canvas = __webpack_require__(116);
+var _network = __webpack_require__(116);
+
+var _network2 = _interopRequireDefault(_network);
+
+var _canvas = __webpack_require__(118);
 
 var _canvas2 = _interopRequireDefault(_canvas);
 
@@ -388,7 +397,11 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 var router = _react2.default.createElement(
   _root2.default,
   null,
-  _react2.default.createElement(_canvas2.default, null)
+  _react2.default.createElement(
+    _network2.default,
+    null,
+    _react2.default.createElement(_canvas2.default, null)
+  )
 );
 
 _reactDom2.default.render(router, document.getElementById('main'));
@@ -407,17 +420,17 @@ Object.defineProperty(exports, "__esModule", {
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _react = __webpack_require__(4);
+var _react = __webpack_require__(3);
 
 var _react2 = _interopRequireDefault(_react);
 
-var _propTypes = __webpack_require__(11);
+var _propTypes = __webpack_require__(9);
 
 var _propTypes2 = _interopRequireDefault(_propTypes);
 
-var _redux = __webpack_require__(27);
+var _redux = __webpack_require__(28);
 
-var _reactRedux = __webpack_require__(32);
+var _reactRedux = __webpack_require__(17);
 
 var _reduxSocketioClient = __webpack_require__(89);
 
@@ -529,14 +542,16 @@ function _interopRequireDefault(obj) {
   return obj && obj.__esModule ? obj : { default: obj };
 }
 
-var actionTypes = ['SOCKET_JOIN', 'SOCKET_LEAVE', 'SOCKET_MESSAGE'];
+var handlers = {};
+
+var ACTION_TYPES = ['SOCKETIO_SUBSCRIBE', 'SOCKETIO_UNSUBSCRIRBE', 'SOCKETIO_MESSAGE'];
 
 var reduxSocketIo = function reduxSocketIo() {
   var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
-  var socketUrl = options.url || options.protocol + '//' + options.hostname + ':' + options.port;
+  var client = createClient(options);
 
-  var client = options.client || (0, _socket2.default)(socketUrl);
+  client.on('message', handleMessage);
 
   return function (store) {
     return function (next) {
@@ -546,73 +561,142 @@ var reduxSocketIo = function reduxSocketIo() {
             namespace = _action$type$match2[1],
             type = _action$type$match2[2];
 
-        if (!_lodash2.default.includes(actionTypes, type)) return next(action);
+        if (type === 'SOCKETIO_SUBSCRIBE') {
 
-        if (action.type === 'SOCKET_JOIN') {
+          var callback = function callback() {
+            return addHandler(action.channel, action.action, action.handler);
+          };
 
-          request(store, action, client, namespace, 'join');
-        } else if (action.type === 'SOCKET_LEAVE') {
+          if (handlers[action.channel]) return callback();
 
-          request(store, action, client, namespace, 'leave');
-        } else if (action.type === 'SOCKET_MESSAGE') {
-
-          request(store, action, client, namespace, 'message');
+          return request(store, action, client, namespace, 'join', null, callback);
         }
+
+        if (type === 'SOCKETIO_UNSUBSCRIBE') {
+
+          console.log(1);
+
+          if (!_lodash2.default.includes(handlers[action.channel][action.action], action.handler)) return;
+
+          console.log(2);
+
+          removeHandler(action.channel, action.action, action.handler);
+
+          console.log(3);
+
+          if (!handlers[action.channel]) return;
+
+          console.log(4);
+
+          return request(store, action, client, namespace, 'leave');
+        }
+
+        if (type === 'SOCKETIO_MESSAGE') {
+
+          var data = {
+            channel: action.channel,
+            action: action.action,
+            message: action.message
+          };
+
+          return request(store, action, client, namespace, 'message', data);
+        }
+
+        return next(action);
       };
     };
   };
 };
 
-var request = function request(store, action, client, namespace, command) {
+var createClient = function createClient(options) {
 
-  var token = 'fesbsdfjbfse68r3jhadwkhuda';
+  var socketUrl = options.url || options.protocol + '//' + options.hostname + ':' + options.port;
 
-  var request = {
-    channel: action.channel,
-    data: action.data
-  };
+  return options.client || (0, _socket2.default)(socketUrl);
+};
 
-  var callback = function callback(result) {
+var addHandler = function addHandler(channel, action, handler) {
 
-    if (result.meta.success) {
+  if (!handlers[channel]) handlers[channel] = {};
+
+  if (!handlers[channel][action]) handlers[channel][action] = [];
+
+  if (_lodash2.default.includes(handlers[channel][action], handler)) return;
+
+  handlers[channel][action].push(handler);
+};
+
+var removeHandler = function removeHandler(channel, action, handler) {
+
+  if (!handlers[channel]) return;
+
+  if (!handlers[channel][action]) return;
+
+  handlers[channel][action] = handlers[channel][action].filter(function (h) {
+    return h !== handler;
+  });
+
+  if (handlers[channel][action].length === 0) delete handlers[channel][action];
+
+  if (Object.keys(handlers[channel]).length === 0) delete handlers[channel];
+};
+
+var handleMessage = function handleMessage(data) {
+
+  if (!handlers[data.channel]) return;
+
+  if (!handlers[data.channel][data.action]) return;
+
+  handlers[data.channel][data.action].map(function (handler) {
+    return handler(data.message);
+  });
+};
+
+var request = function request(store, action, client, namespace, command, data, onSuccess) {
+
+  var channel = action.channel || null;
+
+  var token = action.token || null;
+
+  var callback = function callback(success) {
+
+    if (success) {
 
       if (action.success) {
 
         coerceArray(action.success).map(function (requestAction) {
           store.dispatch({
-            type: withNamespace(namespace, requestAction),
-            result: result
+            type: withNamespace(namespace, requestAction)
           });
         });
       }
 
-      if (action.onSuccess) action.onSuccess(result);
+      if (onSuccess) onSuccess();
     } else {
 
       if (action.failure) {
 
         coerceArray(action.failure).map(function (failureAction) {
           store.dispatch({
-            type: withNamespace(namespace, failureAction),
-            result: result
+            type: withNamespace(namespace, failureAction)
           });
         });
       }
-
-      if (action.onFailure) action.onFailure(result);
     }
   };
 
   if (action.request) {
+
     coerceArray(action.request).map(function (requestAction) {
       store.dispatch({
         type: withNamespace(namespace, requestAction),
-        request: request
+        command: command,
+        data: data
       });
     });
   }
 
-  client.emit(command, token, request, callback);
+  client.emit(command, token, channel, data, callback);
 };
 
 var coerceArray = function coerceArray(value) {

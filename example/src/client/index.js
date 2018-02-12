@@ -1,11 +1,14 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 import Root from './root'
+import Network from './network'
 import Canvas from './canvas'
 
 const router = (
   <Root>
-    <Canvas />
+    <Network>
+      <Canvas />
+    </Network>
   </Root>
 )
 

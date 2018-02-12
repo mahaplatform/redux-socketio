@@ -1,67 +1,137 @@
 import SocketClient from 'socket.io-client'
 import _ from 'lodash'
 
-const actionTypes = [
-  'SOCKET_JOIN',
-  'SOCKET_LEAVE',
-  'SOCKET_MESSAGE'
+let handlers = {}
+
+const ACTION_TYPES = [
+  'SOCKETIO_SUBSCRIBE',
+  'SOCKETIO_UNSUBSCRIRBE',
+  'SOCKETIO_MESSAGE'
 ]
 
 const reduxSocketIo = (options = {}) => {
+  
+  const client = createClient(options)
 
-  const socketUrl = options.url || `${options.protocol}//${options.hostname}:${options.port}`
-
-  const client = options.client || SocketClient(socketUrl)
-
+  client.on('message', handleMessage)
+  
   return store => next => action => {
 
     const [, namespace, type] = action.type.match(/([\a-z0-9_\.]*)?\/?([A-Z0-9_]*)/)
-
-    if(!_.includes(actionTypes, type)) return next(action)
     
-    if(action.type === 'SOCKET_JOIN') {
+    if(type === 'SOCKETIO_SUBSCRIBE') {
       
-      request(store, action, client, namespace, 'join')
-
-    } else if(action.type === 'SOCKET_LEAVE') {
+      const callback = () => addHandler(action.channel, action.action, action.handler)
       
-      request(store, action, client, namespace, 'leave')
-
-    } else if(action.type === 'SOCKET_MESSAGE') {
+      if(handlers[action.channel]) return callback()
       
-      request(store, action, client, namespace, 'message')
+      return request(store, action, client, namespace, 'join', null, callback)
 
     }
+    
+    if(type === 'SOCKETIO_UNSUBSCRIBE') {
+      
+      console.log(1)
+      
+      if(!_.includes(handlers[action.channel][action.action], action.handler)) return
+
+      console.log(2)
+
+      removeHandler(action.channel, action.action, action.handler)
+      
+      console.log(3)
+
+      if(!handlers[action.channel]) return
+      
+      console.log(4)
+
+      return request(store, action, client, namespace, 'leave')
+
+    }
+    
+    if(type === 'SOCKETIO_MESSAGE') {
+      
+      const data = {
+        channel: action.channel,
+        action: action.action,
+        message: action.message
+      }
+      
+      return request(store, action, client, namespace, 'message', data)
+      
+    }
+    
+    return next(action)
 
   }
 
 }
 
-const request = (store, action, client, namespace, command) => {
-
-  const token = 'fesbsdfjbfse68r3jhadwkhuda'
+const createClient = (options) => {
   
-  const request = {
-    channel: action.channel,
-    data: action.data
-  }
+  const socketUrl = options.url || `${options.protocol}//${options.hostname}:${options.port}`
 
-  const callback = (result) => {
+  return options.client || SocketClient(socketUrl)
+
+}
+
+const addHandler = (channel, action, handler) => {
+
+  if(!handlers[channel]) handlers[channel] = {}
+  
+  if(!handlers[channel][action]) handlers[channel][action] = []
+
+  if(_.includes(handlers[channel][action], handler)) return
+  
+  handlers[channel][action].push(handler)
+
+}
+
+const removeHandler = (channel, action, handler) => {
+
+  if(!handlers[channel]) return
+  
+  if(!handlers[channel][action]) return
+  
+  handlers[channel][action] = handlers[channel][action].filter(h => h !== handler)
+  
+  if(handlers[channel][action].length === 0) delete handlers[channel][action]
+  
+  if(Object.keys(handlers[channel]).length === 0) delete handlers[channel]
+
+}
+
+const handleMessage = (data) => {
+
+  if(!handlers[data.channel]) return
+  
+  if(!handlers[data.channel][data.action]) return
+  
+  handlers[data.channel][data.action].map(handler => handler(data.message))
+
+}
+
+const request = (store, action, client, namespace, command, data, onSuccess) => {
+  
+  const channel = action.channel || null
+
+  const token = action.token || null
+
+  const callback = (success) => {
     
-    if(result.meta.success) {
+    if(success) {
       
       if(action.success) {
 
         coerceArray(action.success).map(requestAction => {
           store.dispatch({
-            type: withNamespace(namespace, requestAction),
-            result
+            type: withNamespace(namespace, requestAction)
           })
         })
 
       }
       
-      if(action.onSuccess) action.onSuccess(result)
+      if(onSuccess) onSuccess()
       
     } else {
       
@@ -69,29 +139,29 @@ const request = (store, action, client, namespace, command) => {
         
         coerceArray(action.failure).map(failureAction => {
           store.dispatch({
-            type: withNamespace(namespace, failureAction),
-            result
+            type: withNamespace(namespace, failureAction)
           })
         })
 
       }
-
-      if(action.onFailure) action.onFailure(result)
 
     }
 
   }
 
   if(action.request) {
+
     coerceArray(action.request).map(requestAction => {
       store.dispatch({
         type: withNamespace(namespace, requestAction),
-        request
+        command, 
+        data
       })
     })        
+
   }
 
-  client.emit(command, token, request, callback)
+  client.emit(command, token, channel, data, callback)
   
 }
 

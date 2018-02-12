@@ -12,7 +12,7 @@ const transport = http.createServer(server)
 
 const io = socketio(transport)
 
-io.on('connection', socket)
+io.on('connection', (sock) => socket(io, sock))
 
 transport.listen(8090)
 

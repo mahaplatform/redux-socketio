@@ -4,13 +4,16 @@ import * as actions from './actions'
 import { connect } from 'react-redux'
 
 class Canvas extends React.Component {
+  
+  static contextTypes = {
+    network: PropTypes.object
+  }
 
   static propTypes = {
-    log: PropTypes.array,
-    onJoin: PropTypes.func,
-    onLeave: PropTypes.func,
-    onAction: PropTypes.func
+    log: PropTypes.array
   }
+  
+  _handleReceiveMessage = this._handleReceiveMessage.bind(this)
 
   render() {
     const { log } = this.props
@@ -18,38 +21,7 @@ class Canvas extends React.Component {
       <div className="row">
         <div className="container">
           <div className="col-md-12 text-center">
-            <form className="form-inline" onSubmit={ this._handleJoin.bind(this) }>
-              <div className="input-group mb-2 mr-sm-2 mb-sm-0 mb-2 mr-sm-2 mb-sm-0">
-                <input type="text" className="form-control" placeholder="Channel" ref={ node => this.joinChannel = node } />
-              </div>
-              <div className="input-group mb-2 mr-sm-2 mb-sm-0 mb-2 mr-sm-2 mb-sm-0">
-                <button className="btn btn-block btn-primary">
-                  Join
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-        <div className="container">
-          <div className="col-md-12 text-center">
-            <form className="form-inline" onSubmit={ this._handleLeave.bind(this) }>
-              <div className="input-group mb-2 mr-sm-2 mb-sm-0 mb-2 mr-sm-2 mb-sm-0">
-                <input type="text" className="form-control" placeholder="Channel" ref={ node => this.leaveChannel = node } />
-              </div>
-              <div className="input-group mb-2 mr-sm-2 mb-sm-0 mb-2 mr-sm-2 mb-sm-0">
-                <button className="btn btn-block btn-primary">
-                  Leave
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-        <div className="container">
-          <div className="col-md-12 text-center">
             <form className="form-inline" onSubmit={ this._handleMessage.bind(this) }>
-              <div className="input-group mb-2 mr-sm-2 mb-sm-0 mb-2 mr-sm-2 mb-sm-0">
-                <input type="text" className="form-control" placeholder="Channel" ref={ node => this.messageChannel = node } />
-              </div>
               <div className="input-group mb-2 mr-sm-2 mb-sm-0 mb-2 mr-sm-2 mb-sm-0">
                 <input type="text" className="form-control" placeholder="Message" ref={ node => this.messageText = node } />
               </div>
@@ -59,49 +31,35 @@ class Canvas extends React.Component {
                 </button>
               </div>
             </form>
-            <table className="table table-bordered table-striped">
-              <thead>
-                <tr>
-                  <th>TYPE</th>
-                  <th>CHANNEL</th>
-                  <th>RESULT</th>
-                  <th>DATA</th>
-                </tr>
-              </thead>
-              <tbody>
-                { log.map((row, index) => (
-                  <tr key={`row_${index}`}>
-                    <td>{ row.type }</td>
-                    <td>{ row.channel }</td>
-                    <td>{ JSON.stringify(row.meta) }</td>
-                    <td>{ JSON.stringify(row.data) }</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            { log.map((row, index) => (
+              <div key={`row_${index}`}>
+                { row.text }
+              </div>
+            ))}
           </div>
-        </div>        
+        </div>
       </div>
     )
   }
   
-  _handleJoin(e) {
-    e.preventDefault()
-    this.props.onJoin(this.joinChannel.value)
+  componentDidMount() {
+    this.context.network.subscribe('chat', 'message', this._handleReceiveMessage)
   }
   
-  _handleLeave(e) {
-    e.preventDefault()
-    this.props.onLeave(this.leaveChannel.value)
+  componentWillUnmount(e) {
+    this.context.network.unsubscribe('chat', 'message', this._handleReceiveMessage)
+  }
+  
+  _handleReceiveMessage(message) {
+    this.props.onMessage(message)
   }
   
   _handleMessage(e) {
     e.preventDefault()
-    const data = {
-      action: 'message',
+    const message = {
       text: this.messageText.value
     }
-    this.props.onMessage(this.messageChannel.value, data)
+    this.context.network.message('chat', 'message', message)
   }
 
 }
@@ -111,10 +69,7 @@ const mapStateToProps = state => ({
 })
 
 const mapDispatchToProps = {
-  onJoin: actions.join,
-  onLeave: actions.leave,
-  onMessage: actions.message,
-  onAction: actions.action,
+  onMessage: actions.message
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(Canvas)

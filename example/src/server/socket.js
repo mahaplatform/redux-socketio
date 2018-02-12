@@ -1,46 +1,59 @@
-const result = (data = null) => {
+import _ from 'lodash'
 
-  const result = {
-    meta: {
-      message: 'Success',
-      status: 'OK',
-      success: true
-    }
-  }
+const authenticate = (token) => {
 
-  if(!data) return result
-
-  return {
-    ...result,
-    data
-  }
+  return true
 
 }
 
-export default (socket) => {
+export default (io, socket) => {
   
-  socket.on('join', (token, req, callback) => {
+  let channels = []
+
+  const authorize = (channel) => _.includes(channels, channel)
+
+  socket.on('join', (token, channel, message, callback) => {
     
-    socket.join(req.channel)
-  
-    if(callback) callback(result())
+    const authenticated = authenticate(token)
+    
+    const authorized = authorize(channel)
+
+    if(authenticated && !authorized) {
+
+      socket.join(channel)  
+
+      channels.push(channel)
+
+    }
+
+    if(callback) callback(authenticated)
     
   })
   
-  socket.on('leave', (token, req, callback) => {
+  socket.on('leave', (token, channel, message, callback) => {
     
-    socket.leave(req.channel)
+    const authorized = authorize(channel)
     
-    if(callback) callback(result())
+    if(authorized) {
+
+      socket.leave(channel)
+
+      channels = channels.filter(ch => ch !== channel)
+
+    }
+
+    if(callback) callback(authorized)
     
-  })  
+  })
   
-  socket.on('message', (token, req, callback) => {
+  socket.on('message', (token, channel, data, callback) => {
     
-    if(callback) callback(result())
+    const authorized = authorize(channel)
     
-    socket.in(req.channel).emit(req.data)
+    if(authorized) io.in(channel).send(data)
+
+    if(callback) callback(authorized)
     
-  })  
+  })
   
 }

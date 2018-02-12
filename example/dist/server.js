@@ -30,7 +30,9 @@ var transport = _http2.default.createServer(server);
 
 var io = (0, _socket2.default)(transport);
 
-io.on('connection', _socket4.default);
+io.on('connection', function (s) {
+  return (0, _socket4.default)(io, s);
+});
 
 transport.listen(8090);
 

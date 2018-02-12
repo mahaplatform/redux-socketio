@@ -4,47 +4,63 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+var _lodash = require('lodash');
 
-var result = function result() {
-  var data = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+var _lodash2 = _interopRequireDefault(_lodash);
 
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-  var result = {
-    meta: {
-      message: 'Success',
-      status: 'OK',
-      success: true
-    }
-  };
+var authenticate = function authenticate(token) {
 
-  if (!data) return result;
-
-  return _extends({}, result, {
-    data: data
-  });
+  return true;
 };
 
-exports.default = function (socket) {
+exports.default = function (io, socket) {
 
-  socket.on('join', function (token, req, callback) {
+  var channels = [];
 
-    socket.join(req.channel);
+  var authorize = function authorize(channel) {
+    return _lodash2.default.includes(channels, channel);
+  };
 
-    if (callback) callback(result());
+  socket.on('join', function (token, channel, message, callback) {
+
+    var authenticated = authenticate(token);
+
+    var authorized = authorize(channel);
+
+    if (authenticated && !authorized) {
+
+      socket.join(channel);
+
+      channels.push(channel);
+    }
+
+    if (callback) callback(authenticated);
   });
 
-  socket.on('leave', function (token, req, callback) {
+  socket.on('leave', function (token, channel, message, callback) {
 
-    socket.leave(req.channel);
+    var authorized = authorize(channel);
 
-    if (callback) callback(result());
+    if (authorized) {
+
+      socket.leave(channel);
+
+      channels = channels.filter(function (ch) {
+        return ch !== channel;
+      });
+    }
+
+    if (callback) callback(authorized);
   });
 
-  socket.on('message', function (token, req, callback) {
+  socket.on('message', function (token, channel, data, callback) {
 
-    if (callback) callback(result());
+    var authorized = authorize(channel);
 
-    socket.in(req.channel).emit(req.data);
+    if (authorized) io.in(channel).send(data);
+
+    if (callback) callback(authorized);
   });
 };
