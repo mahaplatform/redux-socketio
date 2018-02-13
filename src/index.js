@@ -21,30 +21,20 @@ const reduxSocketIo = (options = {}) => {
     
     if(type === 'SOCKETIO_SUBSCRIBE') {
       
-      const callback = () => addHandler(action.channel, action.action, action.handler)
+      if(!handlers[action.channel]) request(store, action, client, namespace, 'join')
       
-      if(handlers[action.channel]) return callback()
-      
-      return request(store, action, client, namespace, 'join', null, callback)
+      addHandler(action.channel, action.action, action.handler)
 
     }
     
     if(type === 'SOCKETIO_UNSUBSCRIBE') {
       
-      console.log(1)
-      
       if(!_.includes(handlers[action.channel][action.action], action.handler)) return
 
-      console.log(2)
-
       removeHandler(action.channel, action.action, action.handler)
-      
-      console.log(3)
 
       if(!handlers[action.channel]) return
       
-      console.log(4)
-
       return request(store, action, client, namespace, 'leave')
 
     }
@@ -54,7 +44,7 @@ const reduxSocketIo = (options = {}) => {
       const data = {
         channel: action.channel,
         action: action.action,
-        message: action.message
+        data: action.data
       }
       
       return request(store, action, client, namespace, 'message', data)
@@ -107,7 +97,7 @@ const handleMessage = (data) => {
   
   if(!handlers[data.channel][data.action]) return
   
-  handlers[data.channel][data.action].map(handler => handler(data.message))
+  handlers[data.channel][data.action].map(handler => handler(data.data))
 
 }
 
@@ -160,9 +150,11 @@ const request = (store, action, client, namespace, command, data, onSuccess) => 
     })        
 
   }
-
-  client.emit(command, token, channel, data, callback)
   
+  if(data) return client.emit(command, token, channel, data, callback)
+  
+  client.emit(command, token, channel, callback)
+
 }
 
 const coerceArray = (value) => {
