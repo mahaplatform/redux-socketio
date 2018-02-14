@@ -125,6 +125,7 @@ var handleMessage = function handleMessage(data) {
 
 var createCallback = function createCallback(store, action, client, namespace, command) {
   var data = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : null;
+  var onSuccess = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : null;
 
 
   return function (success) {

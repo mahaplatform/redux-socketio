@@ -109,7 +109,7 @@ const handleMessage = (data) => {
 
 }
 
-const createCallback = (store, action, client, namespace, command, data = null) => {
+const createCallback = (store, action, client, namespace, command, data = null, onSuccess = null) => {
 
   return (success) => {
     
