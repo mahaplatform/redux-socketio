@@ -19,9 +19,15 @@ const reduxSocketIo = (options = {}) => {
 
     const [, namespace, type] = action.type.match(/([\a-z0-9_\.]*)?\/?([A-Z0-9_]*)/)
     
+    const token = action.token || null
+    
+    const channel = action.channel || null
+
     if(type === 'SOCKETIO_SUBSCRIBE') {
-      
-      if(!handlers[action.channel]) request(store, action, client, namespace, 'join')
+
+      const callback = createCallback(store, action, client, namespace, 'join')
+
+      if(!handlers[action.channel]) client.emit('join', token, channel, callback)
       
       addHandler(action.channel, action.action, action.handler)
 
@@ -33,9 +39,9 @@ const reduxSocketIo = (options = {}) => {
 
       removeHandler(action.channel, action.action, action.handler)
 
-      if(!handlers[action.channel]) return
-      
-      return request(store, action, client, namespace, 'leave')
+      const callback = createCallback(store, action, client, namespace, 'leave')
+
+      if(!handlers[action.channel]) client.emit('leave', token, channel, callback)
 
     }
     
@@ -47,7 +53,9 @@ const reduxSocketIo = (options = {}) => {
         data: action.data
       }
       
-      return request(store, action, client, namespace, 'message', data)
+      const callback = createCallback(store, action, client, namespace, 'message', data)
+      
+      return client.emit('message', channel, data, callback)
       
     }
     
@@ -101,13 +109,9 @@ const handleMessage = (data) => {
 
 }
 
-const request = (store, action, client, namespace, command, data, onSuccess) => {
-  
-  const channel = action.channel || null
+const createCallback = (store, action, client, namespace, command, data = null) => {
 
-  const token = action.token || null
-
-  const callback = (success) => {
+  return (success) => {
     
     if(success) {
       
@@ -150,10 +154,6 @@ const request = (store, action, client, namespace, command, data, onSuccess) => 
     })        
 
   }
-  
-  if(data) return client.emit(command, token, channel, data, callback)
-  
-  client.emit(command, token, channel, callback)
 
 }
 

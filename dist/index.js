@@ -36,9 +36,15 @@ var reduxSocketIo = function reduxSocketIo() {
             namespace = _action$type$match2[1],
             type = _action$type$match2[2];
 
+        var token = action.token || null;
+
+        var channel = action.channel || null;
+
         if (type === 'SOCKETIO_SUBSCRIBE') {
 
-          if (!handlers[action.channel]) request(store, action, client, namespace, 'join');
+          var callback = createCallback(store, action, client, namespace, 'join');
+
+          if (!handlers[action.channel]) client.emit('join', token, channel, callback);
 
           addHandler(action.channel, action.action, action.handler);
         }
@@ -49,9 +55,9 @@ var reduxSocketIo = function reduxSocketIo() {
 
           removeHandler(action.channel, action.action, action.handler);
 
-          if (!handlers[action.channel]) return;
+          var _callback = createCallback(store, action, client, namespace, 'leave');
 
-          return request(store, action, client, namespace, 'leave');
+          if (!handlers[action.channel]) client.emit('leave', token, channel, _callback);
         }
 
         if (type === 'SOCKETIO_MESSAGE') {
@@ -62,7 +68,9 @@ var reduxSocketIo = function reduxSocketIo() {
             data: action.data
           };
 
-          return request(store, action, client, namespace, 'message', data);
+          var _callback2 = createCallback(store, action, client, namespace, 'message', data);
+
+          return client.emit('message', channel, data, _callback2);
         }
 
         return next(action);
@@ -115,13 +123,11 @@ var handleMessage = function handleMessage(data) {
   });
 };
 
-var request = function request(store, action, client, namespace, command, data, onSuccess) {
+var createCallback = function createCallback(store, action, client, namespace, command) {
+  var data = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : null;
 
-  var channel = action.channel || null;
 
-  var token = action.token || null;
-
-  var callback = function callback(success) {
+  return function (success) {
 
     if (success) {
 
@@ -158,10 +164,6 @@ var request = function request(store, action, client, namespace, command, data, 
       });
     });
   }
-
-  if (data) return client.emit(command, token, channel, data, callback);
-
-  client.emit(command, token, channel, callback);
 };
 
 var coerceArray = function coerceArray(value) {
