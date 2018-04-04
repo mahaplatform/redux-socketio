@@ -16,17 +16,13 @@ var _lodash2 = _interopRequireDefault(_lodash);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var handlers = {};
-
-var ACTION_TYPES = ['SOCKETIO_SUBSCRIBE', 'SOCKETIO_UNSUBSCRIRBE', 'SOCKETIO_MESSAGE'];
+var ACTION_TYPES = ['SOCKETIO_INIT', 'SOCKETIO_JOIN', 'SOCKETIO_LEAVE', 'SOCKETIO_MESSAGE'];
 
 var reduxSocketIo = function reduxSocketIo() {
   var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
 
 
   var client = createClient(options);
-
-  client.on('message', handleMessage);
 
   return function (store) {
     return function (next) {
@@ -36,41 +32,26 @@ var reduxSocketIo = function reduxSocketIo() {
             namespace = _action$type$match2[1],
             type = _action$type$match2[2];
 
-        var token = action.token || null;
+        if (!_lodash2.default.includes(ACTION_TYPES, type)) return next(action);
 
-        var channel = action.channel || null;
+        if (type === 'SOCKETIO_INIT') {
 
-        if (type === 'SOCKETIO_SUBSCRIBE') {
+          client.on('connect', action.connect);
 
-          var callback = createCallback(store, action, client, namespace, 'join');
+          client.on('disconnect', action.disconnect);
 
-          if (!handlers[action.channel]) client.emit('join', token, channel, callback);
+          client.on('message', action.message);
+        } else if (type === 'SOCKETIO_JOIN') {
 
-          addHandler(action.channel, action.action, action.handler);
-        }
+          console.log('socketio join', action.channel);
 
-        if (type === 'SOCKETIO_UNSUBSCRIBE') {
+          emit(client, store, namespace, action, 'join');
+        } else if (type === 'SOCKETIO_LEAVE') {
 
-          if (!_lodash2.default.includes(handlers[action.channel][action.action], action.handler)) return;
+          emit(client, store, namespace, action, 'leave');
+        } else if (type === 'SOCKETIO_MESSAGE') {
 
-          removeHandler(action.channel, action.action, action.handler);
-
-          var _callback = createCallback(store, action, client, namespace, 'leave');
-
-          if (!handlers[action.channel]) client.emit('leave', token, channel, _callback);
-        }
-
-        if (type === 'SOCKETIO_MESSAGE') {
-
-          var data = {
-            channel: action.channel,
-            action: action.action,
-            data: action.data
-          };
-
-          var _callback2 = createCallback(store, action, client, namespace, 'message', data);
-
-          return client.emit('message', channel, data, _callback2);
+          emit(client, store, namespace, action, 'message');
         }
 
         return next(action);
@@ -86,85 +67,28 @@ var createClient = function createClient(options) {
   return options.client || (0, _socket2.default)(socketUrl);
 };
 
-var addHandler = function addHandler(channel, action, handler) {
+var emit = function emit(client, store, namespace, action, verb) {
 
-  if (!handlers[channel]) handlers[channel] = {};
+  var token = action.token || null;
 
-  if (!handlers[channel][action]) handlers[channel][action] = [];
+  var channel = action.channel || null;
 
-  if (_lodash2.default.includes(handlers[channel][action], handler)) return;
-
-  handlers[channel][action].push(handler);
-};
-
-var removeHandler = function removeHandler(channel, action, handler) {
-
-  if (!handlers[channel]) return;
-
-  if (!handlers[channel][action]) return;
-
-  handlers[channel][action] = handlers[channel][action].filter(function (h) {
-    return h !== handler;
+  store.dispatch({
+    type: withNamespace(namespace, action.request),
+    channel: action.channel,
+    data: action.data
   });
 
-  if (handlers[channel][action].length === 0) delete handlers[channel][action];
+  client.emit(verb, token, action.channel, action.data, function (success) {
 
-  if (Object.keys(handlers[channel]).length === 0) delete handlers[channel];
-};
+    var type = success ? action.success : action.failure;
 
-var handleMessage = function handleMessage(data) {
-
-  if (!handlers[data.channel]) return;
-
-  if (!handlers[data.channel][data.action]) return;
-
-  handlers[data.channel][data.action].map(function (handler) {
-    return handler(data.data);
-  });
-};
-
-var createCallback = function createCallback(store, action, client, namespace, command) {
-  var data = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : null;
-  var onSuccess = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : null;
-
-
-  return function (success) {
-
-    if (success) {
-
-      if (action.success) {
-
-        coerceArray(action.success).map(function (requestAction) {
-          store.dispatch({
-            type: withNamespace(namespace, requestAction)
-          });
-        });
-      }
-
-      if (onSuccess) onSuccess();
-    } else {
-
-      if (action.failure) {
-
-        coerceArray(action.failure).map(function (failureAction) {
-          store.dispatch({
-            type: withNamespace(namespace, failureAction)
-          });
-        });
-      }
-    }
-  };
-
-  if (action.request) {
-
-    coerceArray(action.request).map(function (requestAction) {
-      store.dispatch({
-        type: withNamespace(namespace, requestAction),
-        command: command,
-        data: data
-      });
+    store.dispatch({
+      type: withNamespace(namespace, type),
+      channel: action.channel,
+      data: action.data
     });
-  }
+  });
 };
 
 var coerceArray = function coerceArray(value) {
