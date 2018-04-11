@@ -43,8 +43,6 @@ var reduxSocketIo = function reduxSocketIo() {
           client.on('message', action.message);
         } else if (type === 'SOCKETIO_JOIN') {
 
-          console.log('socketio join', action.channel);
-
           emit(client, store, namespace, action, 'join');
         } else if (type === 'SOCKETIO_LEAVE') {
 
